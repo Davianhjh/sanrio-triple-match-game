@@ -412,6 +412,8 @@ let isAnimating = false;
 let levelPassed = false;
 let completedLevels = new Set();
 let hintCells = null;    // [[r1,c1],[r2,c2]] or null
+let comboFlag = 0;       // 0 or 1 — "连消" flag
+let lastPts   = 0;       // score from the previous elimination (for bonus calc)
 
 // ─────────────────────────────────────────────
 //  UTILS
@@ -652,8 +654,28 @@ async function eliminationLoop() {
     }
     await sleep(420);
 
-    // Calculate score
-    const pts = 2 * all.length;
+    // ── Calculate score ──
+    const n = all.length;
+    const base       = n * 2;
+    const difficulty = Math.min(50, Math.pow(n - 2, 2) * 2);
+
+    // Update combo flag based on this elimination's block count
+    const prevFlag = comboFlag;
+    comboFlag = n >= 6 ? 1 : 0;
+
+    // Combo bonus:
+    //   prevFlag=1 → 20% of last score, capped at 20
+    //   prevFlag=0 but flag just became 1 AND it's the very first
+    //   elimination (lastPts=0) → fixed 10 pt kick-start bonus
+    let bonus = 0;
+    if (prevFlag === 1) {
+      bonus = Math.min(20, Math.round(lastPts * 0.2));
+    } else if (comboFlag === 1 && lastPts === 0) {
+      bonus = 10;
+    }
+
+    const pts = base + difficulty + bonus;
+    lastPts = pts;
     score += pts;
     spawnScorePopup(all, pts);
 
@@ -837,6 +859,8 @@ async function startLevel(idx) {
   selected = null;
   levelPassed = false;
   hintCells = null;
+  comboFlag = 0;
+  lastPts   = 0;
   buildBoard();
   updateHUD();
   renderBoard();
