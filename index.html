@@ -156,12 +156,11 @@
       100% { transform: translateY(0);     opacity: 1; }
     }
 
-    /* ── Swap animation ── */
-    .cell.swap-anim { animation: swapBounce 0.3s ease-out; }
-    @keyframes swapBounce {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(1.18); }
-      100% { transform: scale(1); }
+    /* ── Swap animation: cells fly to each other's position ── */
+    .cell.swapping {
+      will-change: transform;
+      z-index: 30 !important;
+      pointer-events: none;
     }
 
     /* ── Score popup ── */
@@ -651,19 +650,50 @@ async function eliminationLoop() {
 async function doSwap(r1,c1,r2,c2) {
   isAnimating = true;
 
-  // animate
-  const d1=cellEl(r1,c1), d2=cellEl(r2,c2);
-  if(d1){ d1.classList.remove('selected'); d1.classList.add('swap-anim'); }
-  if(d2){ d2.classList.add('swap-anim'); }
-  await sleep(300);
-  if(d1) d1.classList.remove('swap-anim');
-  if(d2) d2.classList.remove('swap-anim');
+  const d1 = cellEl(r1,c1);
+  const d2 = cellEl(r2,c2);
 
-  // swap data
+  if (d1 && d2) {
+    // Measure positions before any change
+    const rect1 = d1.getBoundingClientRect();
+    const rect2 = d2.getBoundingClientRect();
+
+    const dx1 = rect2.left - rect1.left;
+    const dy1 = rect2.top  - rect1.top;
+    const dx2 = rect1.left - rect2.left;
+    const dy2 = rect1.top  - rect2.top;
+
+    // Deselect + prepare for flight
+    d1.classList.remove('selected');
+    d1.classList.add('swapping');
+    d2.classList.add('swapping');
+
+    // Force a reflow so the starting transform (identity) is established
+    void d1.offsetWidth;
+
+    // Apply transitions and fly to opposite positions
+    d1.style.transition = 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)';
+    d2.style.transition = 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)';
+    d1.style.transform  = `translate(${dx1}px, ${dy1}px)`;
+    d2.style.transform  = `translate(${dx2}px, ${dy2}px)`;
+
+    await sleep(340);  // slightly longer than transition duration
+
+    // Clean up inline styles
+    d1.style.transition = '';
+    d1.style.transform  = '';
+    d2.style.transition = '';
+    d2.style.transform  = '';
+    d1.classList.remove('swapping');
+    d2.classList.remove('swapping');
+  }
+
+  // Commit data swap
   [board[r1][c1], board[r2][c2]] = [board[r2][c2], board[r1][c1]];
   steps++;
   selected = null;
-  refreshCell(r1,c1); refreshCell(r2,c2);
+  refreshCell(r1,c1);
+  refreshCell(r2,c2);
   updateHUD();
 
   await eliminationLoop();
