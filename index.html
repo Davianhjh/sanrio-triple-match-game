@@ -382,16 +382,19 @@
 //  CONFIG
 // ─────────────────────────────────────────────
 const COLORS = [
-  { bg:'#f48fb1', dark:'#ad1457', emoji:'🌸' }, // 0 pink
-  { bg:'#4fc3f7', dark:'#0277bd', emoji:'⭐' }, // 1 blue
-  { bg:'#a5d6a7', dark:'#2e7d32', emoji:'🍀' }, // 2 green
-  { bg:'#fff176', dark:'#f9a825', emoji:'🌟' }, // 3 yellow
-  { bg:'#ce93d8', dark:'#6a1b9a', emoji:'🎀' }, // 4 purple
-  { bg:'#ffcc80', dark:'#e65100', emoji:'🍊' }, // 5 orange
-  { bg:'#80cbc4', dark:'#00695c', emoji:'💎' }, // 6 teal
-  { bg:'#ef9a9a', dark:'#b71c1c', emoji:'❤️' }, // 7 red
-  { bg:'#9fa8da', dark:'#1a237e', emoji:'🌙' }, // 8 indigo
-  { bg:'#80deea', dark:'#006064', emoji:'🦋' }, // 9 cyan
+  { bg:'#f48fb1', dark:'#ad1457', emoji:'🌸', img:'' }, // 0 pink
+  { bg:'#4fc3f7', dark:'#0277bd', emoji:'⭐', img:'' }, // 1 blue
+  { bg:'#a5d6a7', dark:'#2e7d32', emoji:'🍀', img:'' }, // 2 green
+  { bg:'#fff176', dark:'#f9a825', emoji:'🌟', img:'' }, // 3 yellow
+  { bg:'#ce93d8', dark:'#6a1b9a', emoji:'🎀', img:'' }, // 4 purple
+  { bg:'#ffcc80', dark:'#e65100', emoji:'🍊', img:'' }, // 5 orange
+  { bg:'#80cbc4', dark:'#00695c', emoji:'💎', img:'' }, // 6 teal
+  { bg:'#ef9a9a', dark:'#b71c1c', emoji:'❤️', img:'' }, // 7 red
+  { bg:'#9fa8da', dark:'#1a237e', emoji:'🌙', img:'' }, // 8 indigo
+  { bg:'#80deea', dark:'#006064', emoji:'🦋', img:'' }, // 9 cyan
+  // ↑ To use custom images: set img to a path, e.g. img:'assets/hello-kitty.png'
+  // Images should be square PNGs/WebPs with transparent background.
+  // Place them in an assets/ folder next to index.html.
 ];
 
 // walls: array of [row, col]
@@ -467,7 +470,6 @@ function renderBoard() {
 }
 
 function styleCell(div, cell) {
-  // remove type classes
   div.classList.remove('type-block','type-wall','type-empty','selected');
   div.classList.add('type-' + cell.t);
   if (cell.t === 'block') {
@@ -475,7 +477,13 @@ function styleCell(div, cell) {
     div.style.background = `linear-gradient(145deg, ${col.bg}, ${col.dark})`;
     div.style.boxShadow  = `inset 0 -4px 0 ${col.dark}, inset 0 2px 0 rgba(255,255,255,.3)`;
     div.style.color = '#fff';
-    div.textContent = col.emoji;
+    if (col.img) {
+      // Use custom cartoon image (transparent-bg PNG/WebP)
+      div.innerHTML = `<img src="${col.img}" alt="" draggable="false"
+        style="width:72%;height:72%;object-fit:contain;pointer-events:none;display:block;">`;
+    } else {
+      div.textContent = col.emoji;
+    }
   } else if (cell.t === 'wall') {
     div.style.background = '';
     div.style.boxShadow  = '';
