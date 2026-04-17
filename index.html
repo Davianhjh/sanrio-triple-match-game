@@ -495,20 +495,21 @@ function updateHUD() {
 }
 
 // ─────────────────────────────────────────────
-//  CONNECTED COMPONENT (BFS)
+//  MATCH DETECTION
 // ─────────────────────────────────────────────
+function isBlock(r, c) {
+  return r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c].t === 'block';
+}
+
 function getGroups() {
-  // Collect all cells that belong to a horizontal or vertical run of ≥ 3
-  // same-color blocks. Walls break runs.
   const matched = new Set(); // keys "r,c"
 
-  // Scan rows
+  // ── Rule 1: horizontal run of ≥ 3 same-color blocks ──
   for (let r = 0; r < ROWS; r++) {
     let runStart = 0;
     for (let c = 1; c <= COLS; c++) {
       const prev = board[r][c - 1];
       const curr = c < COLS ? board[r][c] : null;
-      // run continues only when both are blocks of the same color
       const cont = curr && curr.t === 'block' &&
                    prev.t === 'block' && curr.color === prev.color;
       if (!cont) {
@@ -521,7 +522,7 @@ function getGroups() {
     }
   }
 
-  // Scan columns
+  // ── Rule 2: vertical run of ≥ 3 same-color blocks ──
   for (let c = 0; c < COLS; c++) {
     let runStart = 0;
     for (let r = 1; r <= ROWS; r++) {
@@ -535,6 +536,25 @@ function getGroups() {
           for (let i = runStart; i < r; i++) matched.add(`${i},${c}`);
         }
         runStart = r;
+      }
+    }
+  }
+
+  // ── Rule 3: 2×2 square of same-color blocks ──
+  // Check every top-left corner (r,c) of a potential 2×2
+  for (let r = 0; r < ROWS - 1; r++) {
+    for (let c = 0; c < COLS - 1; c++) {
+      if (!isBlock(r,c)) continue;
+      const color = board[r][c].color;
+      if (
+        isBlock(r,   c+1) && board[r][c+1].color   === color &&
+        isBlock(r+1, c)   && board[r+1][c].color   === color &&
+        isBlock(r+1, c+1) && board[r+1][c+1].color === color
+      ) {
+        matched.add(`${r},${c}`);
+        matched.add(`${r},${c+1}`);
+        matched.add(`${r+1},${c}`);
+        matched.add(`${r+1},${c+1}`);
       }
     }
   }
