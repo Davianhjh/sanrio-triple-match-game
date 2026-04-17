@@ -312,8 +312,12 @@
 <body>
 
 <audio id="bgm" src="assets/puzzle_game_bgm.mp3" loop preload="auto"></audio>
-<audio id="sfx-swap"  src="assets/swap.mp3"  preload="auto"></audio>
-<audio id="sfx-match" src="assets/match.mp3" preload="auto"></audio>
+<audio id="sfx-swap"        src="assets/swap.mp3"         preload="auto"></audio>
+<audio id="sfx-match"       src="assets/match.mp3"        preload="auto"></audio>
+<audio id="sfx-good"        src="assets/good.mp3"         preload="auto"></audio>
+<audio id="sfx-excellent"   src="assets/excellent.mp3"    preload="auto"></audio>
+<audio id="sfx-amazing"     src="assets/amazing.mp3"      preload="auto"></audio>
+<audio id="sfx-unbelievable" src="assets/unbelievable.mp3" preload="auto"></audio>
 
 <div id="top-controls">
   <button id="btn-bgm">🔇</button>
@@ -832,6 +836,7 @@ function spawnScorePopup(cells, pts) {
 // ─────────────────────────────────────────────
 async function eliminationLoop() {
   isAnimating = true;
+  let roundScore = 0;  // total pts earned in this operation's cascade
   while (true) {
     const groups = getGroups();
     if (!groups.length) break;
@@ -868,6 +873,7 @@ async function eliminationLoop() {
     const pts = base + difficulty + bonus;
     lastPts = pts;
     score += pts;
+    roundScore += pts;
     spawnScorePopup(all, pts);
 
     // Remove from board
@@ -900,6 +906,15 @@ async function eliminationLoop() {
     }
     await sleep(380);
   }
+
+  // Play round-end rating sfx based on total score earned this cascade
+  if (roundScore > 0) {
+    if      (roundScore > 40) playSfx(sfxUnbelievable);
+    else if (roundScore > 20) playSfx(sfxAmazing);
+    else if (roundScore > 6)  playSfx(sfxExcellent);
+    else                      playSfx(sfxGood);
+  }
+
   isAnimating = false;
 }
 
@@ -1129,12 +1144,20 @@ function openLevelSelect() {
 // ─────────────────────────────────────────────
 //  BGM & SFX
 // ─────────────────────────────────────────────
-const bgm      = document.getElementById('bgm');
-const sfxSwap  = document.getElementById('sfx-swap');
-const sfxMatch = document.getElementById('sfx-match');
-bgm.volume      = 0.4;
-sfxSwap.volume  = 0.7;
-sfxMatch.volume = 0.8;
+const bgm             = document.getElementById('bgm');
+const sfxSwap         = document.getElementById('sfx-swap');
+const sfxMatch        = document.getElementById('sfx-match');
+const sfxGood         = document.getElementById('sfx-good');
+const sfxExcellent    = document.getElementById('sfx-excellent');
+const sfxAmazing      = document.getElementById('sfx-amazing');
+const sfxUnbelievable = document.getElementById('sfx-unbelievable');
+bgm.volume             = 0.4;
+sfxSwap.volume         = 0.7;
+sfxMatch.volume        = 0.8;
+sfxGood.volume         = 0.9;
+sfxExcellent.volume    = 0.9;
+sfxAmazing.volume      = 0.9;
+sfxUnbelievable.volume = 0.9;
 
 // Play a short sfx from the start (supports rapid re-trigger)
 function playSfx(el) {
