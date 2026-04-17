@@ -547,18 +547,17 @@ const COLORS = [
   // Place them in an assets/ folder next to index.html.
 ];
 
-// walls: array of [row, col]
 const LEVELS = [
-  { colorCount:7,  target:300,  walls:[] },
-  { colorCount:7,  target:420,  walls:[[4,4],[5,5]] },
-  { colorCount:7,  target:560,  walls:[[2,2],[2,7],[7,2],[7,7]] },
-  { colorCount:8,  target:720,  walls:[[0,5],[9,4],[3,0],[6,9],[4,3],[5,6]] },
-  { colorCount:8,  target:900,  walls:[[1,2],[1,7],[8,2],[8,7],[4,0],[4,9],[5,0],[5,9]] },
-  { colorCount:9,  target:1100, walls:[[0,2],[0,7],[2,0],[2,9],[3,4],[3,5],[6,4],[6,5],[7,0],[7,9],[9,2],[9,7]] },
-  { colorCount:9,  target:1320, walls:[[1,1],[1,5],[1,8],[4,3],[4,6],[5,3],[5,6],[8,1],[8,5],[8,8],[3,0],[6,9]] },
-  { colorCount:9,  target:1560, walls:[[0,4],[0,5],[2,2],[2,7],[4,0],[4,9],[5,0],[5,9],[7,2],[7,7],[9,4],[9,5],[3,4],[6,5]] },
-  { colorCount:10, target:1820, walls:[[0,0],[0,9],[9,0],[9,9],[2,2],[2,7],[7,2],[7,7],[4,4],[4,5],[5,4],[5,5],[1,5],[8,4]] },
-  { colorCount:10, target:2100, walls:[[0,3],[0,6],[3,0],[6,0],[3,9],[6,9],[9,3],[9,6],[2,4],[2,5],[4,2],[5,2],[4,7],[5,7],[7,4],[7,5],[4,4],[5,5]] },
+  { colorCount:7,  target:300,  wallCount:0 },
+  { colorCount:7,  target:400,  wallCount:0 },
+  { colorCount:7,  target:500,  wallCount:0 },
+  { colorCount:8,  target:600,  wallCount:2 },
+  { colorCount:8,  target:650,  wallCount:2 },
+  { colorCount:9,  target:700,  wallCount:3 },
+  { colorCount:9,  target:750,  wallCount:3 },
+  { colorCount:9,  target:800,  wallCount:3 },
+  { colorCount:10, target:850,  wallCount:4 },
+  { colorCount:10, target:900,  wallCount:4 },
 ];
 
 const ROWS = 10, COLS = 10;
@@ -597,7 +596,21 @@ function buildBoard() {
   board = Array.from({length: ROWS}, () =>
     Array.from({length: COLS}, () => ({ t:'block', color: rnd(cfg.colorCount) }))
   );
-  for (const [r,c] of cfg.walls) board[r][c] = { t:'wall', color:-1 };
+  // Randomly place walls, avoiding corners (to keep playfield accessible)
+  const n = cfg.wallCount || 0;
+  const placed = new Set();
+  let attempts = 0;
+  while (placed.size < n && attempts < 1000) {
+    attempts++;
+    const r = rnd(ROWS);
+    const c = rnd(COLS);
+    const key = `${r},${c}`;
+    if (placed.has(key)) continue;
+    // Avoid corners so the board always has open edge cells
+    if ((r === 0 || r === ROWS-1) && (c === 0 || c === COLS-1)) continue;
+    placed.add(key);
+    board[r][c] = { t:'wall', color:-1 };
+  }
 }
 
 // ─────────────────────────────────────────────
