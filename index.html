@@ -562,15 +562,31 @@ function getGroups() {
 
   if (!seeds.size) return [];
 
-  // ── Expand: add all same-color neighbors of every seed cell ──
-  const matched = new Set(seeds);
+  // ── Expand: BFS flood-fill from every seed, same color only ──
+  // Seeds may span multiple colors (different matched groups), so
+  // group them by color first, then BFS each color independently.
+  const byColor = new Map(); // color → Set of "r,c" keys
   for (const key of seeds) {
-    const [sr, sc] = key.split(',').map(Number);
-    const color = board[sr][sc].color;
-    for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-      const nr = sr + dr, nc = sc + dc;
-      if (isBlock(nr, nc) && board[nr][nc].color === color) {
-        matched.add(`${nr},${nc}`);
+    const [r, c] = key.split(',').map(Number);
+    const color = board[r][c].color;
+    if (!byColor.has(color)) byColor.set(color, new Set());
+    byColor.get(color).add(key);
+  }
+
+  const matched = new Set();
+  for (const [color, startSet] of byColor) {
+    const queue = [...startSet].map(k => k.split(',').map(Number));
+    const visited = new Set(startSet);
+    while (queue.length) {
+      const [r, c] = queue.shift();
+      matched.add(`${r},${c}`);
+      for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+        const nr = r + dr, nc = c + dc;
+        const nk = `${nr},${nc}`;
+        if (!visited.has(nk) && isBlock(nr, nc) && board[nr][nc].color === color) {
+          visited.add(nk);
+          queue.push([nr, nc]);
+        }
       }
     }
   }
