@@ -504,7 +504,7 @@ function isBlock(r, c) {
 }
 
 function getGroups() {
-  const matched = new Set(); // keys "r,c"
+  const seeds = new Set(); // keys "r,c" — cells matched by line or 2×2 rules
 
   // ── Rule 1: horizontal run of ≥ 3 same-color blocks ──
   for (let r = 0; r < ROWS; r++) {
@@ -517,7 +517,7 @@ function getGroups() {
       if (!cont) {
         const len = c - runStart;
         if (len >= 3 && board[r][runStart].t === 'block') {
-          for (let i = runStart; i < c; i++) matched.add(`${r},${i}`);
+          for (let i = runStart; i < c; i++) seeds.add(`${r},${i}`);
         }
         runStart = c;
       }
@@ -535,7 +535,7 @@ function getGroups() {
       if (!cont) {
         const len = r - runStart;
         if (len >= 3 && board[runStart][c].t === 'block') {
-          for (let i = runStart; i < r; i++) matched.add(`${i},${c}`);
+          for (let i = runStart; i < r; i++) seeds.add(`${i},${c}`);
         }
         runStart = r;
       }
@@ -543,25 +543,38 @@ function getGroups() {
   }
 
   // ── Rule 3: 2×2 square of same-color blocks ──
-  // Check every top-left corner (r,c) of a potential 2×2
   for (let r = 0; r < ROWS - 1; r++) {
     for (let c = 0; c < COLS - 1; c++) {
-      if (!isBlock(r,c)) continue;
+      if (!isBlock(r, c)) continue;
       const color = board[r][c].color;
       if (
         isBlock(r,   c+1) && board[r][c+1].color   === color &&
         isBlock(r+1, c)   && board[r+1][c].color   === color &&
         isBlock(r+1, c+1) && board[r+1][c+1].color === color
       ) {
-        matched.add(`${r},${c}`);
-        matched.add(`${r},${c+1}`);
-        matched.add(`${r+1},${c}`);
-        matched.add(`${r+1},${c+1}`);
+        seeds.add(`${r},${c}`);
+        seeds.add(`${r},${c+1}`);
+        seeds.add(`${r+1},${c}`);
+        seeds.add(`${r+1},${c+1}`);
       }
     }
   }
 
-  if (!matched.size) return [];
+  if (!seeds.size) return [];
+
+  // ── Expand: add all same-color neighbors of every seed cell ──
+  const matched = new Set(seeds);
+  for (const key of seeds) {
+    const [sr, sc] = key.split(',').map(Number);
+    const color = board[sr][sc].color;
+    for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const nr = sr + dr, nc = sc + dc;
+      if (isBlock(nr, nc) && board[nr][nc].color === color) {
+        matched.add(`${nr},${nc}`);
+      }
+    }
+  }
+
   const cells = [...matched].map(k => k.split(',').map(Number));
   return [cells];
 }
