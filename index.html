@@ -130,10 +130,15 @@
     }
 
     /* ── Hint highlight ── */
-    .cell.hint { animation: pulse-hint 0.8s ease-in-out 3; }
+    .cell.hint-a, .cell.hint-b {
+      animation: pulse-hint 0.7s ease-in-out infinite;
+      z-index: 10;
+    }
+    .cell.hint-a { outline: 3px solid #ffd600; }
+    .cell.hint-b { outline: 3px solid #69f0ae; }
     @keyframes pulse-hint {
-      0%,100% { outline: 3px solid transparent; }
-      50% { outline: 3px solid #ffd600; box-shadow: 0 0 12px #ffd600; }
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,214,0,0); transform: scale(1); }
+      50%      { box-shadow: 0 0 14px 4px rgba(255,214,0,.55); transform: scale(1.1); }
     }
 
     /* ── Eliminate animation ── */
@@ -406,6 +411,7 @@ let selected = null;     // [r,c] or null
 let isAnimating = false;
 let levelPassed = false;
 let completedLevels = new Set();
+let hintCells = null;    // [[r1,c1],[r2,c2]] or null
 
 // ─────────────────────────────────────────────
 //  UTILS
@@ -669,6 +675,7 @@ async function eliminationLoop() {
 // ─────────────────────────────────────────────
 async function doSwap(r1,c1,r2,c2) {
   isAnimating = true;
+  clearHint();
 
   const d1 = cellEl(r1,c1);
   const d2 = cellEl(r2,c2);
@@ -727,6 +734,8 @@ function onCellClick(r, c) {
   const cell = board[r][c];
   if (cell.t !== 'block') return;
 
+  clearHint();
+
   if (!selected) {
     selected = [r,c];
     const d = cellEl(r,c);
@@ -776,15 +785,26 @@ function findHint() {
   return null;
 }
 
+function clearHint() {
+  if (!hintCells) return;
+  for (const [r,c] of hintCells) {
+    const d = cellEl(r,c);
+    if (d) { d.classList.remove('hint-a','hint-b'); }
+  }
+  hintCells = null;
+}
+
 function showHint() {
   if (isAnimating) return;
+  clearHint();
   const hint = findHint();
   if (!hint) { alert('暂时没有可消除的移动，请继续寻找！'); return; }
+  hintCells = hint;
   const [[r1,c1],[r2,c2]] = hint;
-  for (const [r,c] of [[r1,c1],[r2,c2]]) {
-    const d = cellEl(r,c);
-    if(d){ d.classList.add('hint'); setTimeout(()=>d.classList.remove('hint'), 2500); }
-  }
+  const d1 = cellEl(r1,c1);
+  const d2 = cellEl(r2,c2);
+  if (d1) d1.classList.add('hint-a');
+  if (d2) d2.classList.add('hint-b');
 }
 
 // ─────────────────────────────────────────────
@@ -796,6 +816,7 @@ async function startLevel(idx) {
   steps = 0;
   selected = null;
   levelPassed = false;
+  hintCells = null;
   buildBoard();
   updateHUD();
   renderBoard();
