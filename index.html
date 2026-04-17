@@ -320,6 +320,7 @@
 <audio id="sfx-amazing"     src="assets/amazing.mp3"      preload="auto"></audio>
 <audio id="sfx-unbelievable" src="assets/unbelievable.mp3" preload="auto"></audio>
 <audio id="sfx-pass"        src="assets/pass.mp3"         preload="auto"></audio>
+<audio id="sfx-victory"     src="assets/victory.mp3"      preload="auto"></audio>
 
 <div id="top-controls">
   <button id="btn-bgm">🔇</button>
@@ -444,6 +445,7 @@ const I18N = {
     ],
     btnStart:         '开始游戏 ▶',
     completeTitle:    '🎉 过关啦！',
+    completeTitleFinal: '🏆 恭喜您已通过所有关卡！',
     completeLevelLabel: '完成',
     completeScore:    '得分：',
     completeSteps:    '步数：',
@@ -478,6 +480,7 @@ const I18N = {
     ],
     btnStart:         'Start Game ▶',
     completeTitle:    '🎉 Level Complete!',
+    completeTitleFinal: '🏆 Congratulations! All levels cleared!',
     completeLevelLabel: 'Completed',
     completeScore:    'Score: ',
     completeSteps:    'Steps: ',
@@ -888,8 +891,10 @@ async function eliminationLoop() {
       levelPassed = true;
       renderBoard();
       isAnimating = false;
-      sfxPass.currentTime = 0;
-      sfxPass.play().catch(() => {});
+      const isFinal = levelIdx >= LEVELS.length - 1;
+      const sfx = isFinal ? sfxVictory : sfxPass;
+      sfx.currentTime = 0;
+      sfx.play().catch(() => {});
       await sleep(150);
       showLevelComplete();
       return;
@@ -1111,18 +1116,18 @@ async function animateLevelStart() {
 function showLevelComplete() {
   completedLevels.add(levelIdx);
   const tx = I18N[lang];
+  const isFinal = levelIdx >= LEVELS.length - 1;
+
+  document.getElementById('modal-complete-title').textContent =
+    isFinal ? tx.completeTitleFinal : tx.completeTitle;
   document.getElementById('mc-level').textContent = tx.levelText(levelIdx + 1);
   document.getElementById('mc-score').textContent = score;
   document.getElementById('mc-steps').textContent = steps;
+
   const nextBtn = document.getElementById('btn-next');
-  if (levelIdx >= LEVELS.length-1) {
-    nextBtn.style.display = 'none';
-    document.getElementById('modal-complete').classList.add('hidden');
-    document.getElementById('modal-allclear').classList.remove('hidden');
-  } else {
-    nextBtn.style.display = '';
-    document.getElementById('modal-complete').classList.remove('hidden');
-  }
+  nextBtn.style.display = isFinal ? 'none' : '';
+
+  document.getElementById('modal-complete').classList.remove('hidden');
 }
 
 function openLevelSelect() {
@@ -1167,6 +1172,7 @@ const sfxExcellent    = document.getElementById('sfx-excellent');
 const sfxAmazing      = document.getElementById('sfx-amazing');
 const sfxUnbelievable = document.getElementById('sfx-unbelievable');
 const sfxPass         = document.getElementById('sfx-pass');
+const sfxVictory      = document.getElementById('sfx-victory');
 bgm.volume             = 0.4;
 sfxSwap.volume         = 0.7;
 sfxMatch.volume        = 0.8;
@@ -1175,6 +1181,7 @@ sfxExcellent.volume    = 0.9;
 sfxAmazing.volume      = 0.9;
 sfxUnbelievable.volume = 0.9;
 sfxPass.volume         = 1.0;
+sfxVictory.volume      = 1.0;
 
 // Play a short sfx from the start (supports rapid re-trigger)
 function playSfx(el) {
