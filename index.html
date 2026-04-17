@@ -887,14 +887,9 @@ async function eliminationLoop() {
       levelPassed = true;
       renderBoard();
       isAnimating = false;
-      // Play pass sfx and wait for it to finish before showing modal
-      await new Promise(resolve => {
-        sfxPass.currentTime = 0;
-        sfxPass.play().catch(() => {});
-        sfxPass.onended = resolve;
-        // Fallback: if onended doesn't fire (e.g. audio blocked), resolve after 3s
-        setTimeout(resolve, 3000);
-      });
+      sfxPass.currentTime = 0;
+      sfxPass.play().catch(() => {});
+      await sleep(150);
       showLevelComplete();
       return;
     }
