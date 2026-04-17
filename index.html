@@ -301,7 +301,8 @@
     .lvl-btn.unlocked:hover { background:#f06292; color:#fff; }
     .lvl-btn.completed  { background:#c8e6c9; color:#1b5e20; border-color:#81c784; }
     .lvl-btn.active     { background: linear-gradient(135deg,#f06292,#ff8a65); color:#fff; }
-    .lvl-btn.locked     { background:#eeeeee; color:#bbb; cursor:not-allowed; }
+    .lvl-btn.locked     { background:#eeeeee; color:#bbb; cursor:not-allowed; opacity:0.55; }
+    .lvl-btn.locked:hover { background:#eeeeee; color:#bbb; transform:none; box-shadow:none; }
 
     /* ── Instruction steps ── */
     .step-list { text-align:left; padding-left:0; list-style:none; }
@@ -912,8 +913,8 @@ async function eliminationLoop() {
 
   // Play round-end rating sfx based on total score earned this cascade
   if (roundScore > 0) {
-    if      (roundScore > 80) playSfx(sfxUnbelievable);
-    else if (roundScore > 50) playSfx(sfxAmazing);
+    if      (roundScore > 100) playSfx(sfxUnbelievable);
+    else if (roundScore > 60) playSfx(sfxAmazing);
     else if (roundScore > 20)  playSfx(sfxExcellent);
     else                      playSfx(sfxGood);
   }
@@ -1130,15 +1131,26 @@ function openLevelSelect() {
   for (let i=0;i<LEVELS.length;i++) {
     const b = document.createElement('button');
     b.className = 'lvl-btn';
-    let cls = 'unlocked';
-    if (i === levelIdx) cls = 'active';
+
+    const isAccessible = completedLevels.has(i) || i === levelIdx;
+    let cls;
+    if (i === levelIdx)             cls = 'active';
     else if (completedLevels.has(i)) cls = 'completed';
+    else                             cls = 'locked';
+
     b.classList.add(cls);
-    b.textContent = I18N[lang].levelBtnText(i + 1, completedLevels.has(i));
-    b.addEventListener('click',()=>{
-      document.getElementById('modal-levels').classList.add('hidden');
-      startLevel(i);
-    });
+    b.textContent = isAccessible
+      ? I18N[lang].levelBtnText(i + 1, completedLevels.has(i))
+      : `🔒 ${i + 1}`;
+
+    if (!isAccessible) {
+      b.disabled = true;
+    } else {
+      b.addEventListener('click',()=>{
+        document.getElementById('modal-levels').classList.add('hidden');
+        startLevel(i);
+      });
+    }
     grid.appendChild(b);
   }
   document.getElementById('modal-levels').classList.remove('hidden');
