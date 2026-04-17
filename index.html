@@ -312,6 +312,8 @@
 <body>
 
 <audio id="bgm" src="assets/puzzle_game_bgm.mp3" loop preload="auto"></audio>
+<audio id="sfx-swap"  src="assets/swap.mp3"  preload="auto"></audio>
+<audio id="sfx-match" src="assets/match.mp3" preload="auto"></audio>
 
 <div id="top-controls">
   <button id="btn-bgm">🔇</button>
@@ -836,6 +838,7 @@ async function eliminationLoop() {
 
     // Mark eliminating
     const all = groups.flat();
+    playSfx(sfxMatch);
     for (const [r,c] of all) {
       const d = cellEl(r,c);
       if (d) d.classList.add('eliminating');
@@ -929,6 +932,7 @@ async function doSwap(r1,c1,r2,c2) {
     void d1.offsetWidth;
 
     // Apply transitions and fly to opposite positions
+    playSfx(sfxSwap);
     d1.style.transition = 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)';
     d2.style.transition = 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)';
     d1.style.transform  = `translate(${dx1}px, ${dy1}px)`;
@@ -1123,10 +1127,20 @@ function openLevelSelect() {
 }
 
 // ─────────────────────────────────────────────
-//  BGM
+//  BGM & SFX
 // ─────────────────────────────────────────────
-const bgm = document.getElementById('bgm');
-bgm.volume = 0.4;
+const bgm      = document.getElementById('bgm');
+const sfxSwap  = document.getElementById('sfx-swap');
+const sfxMatch = document.getElementById('sfx-match');
+bgm.volume      = 0.4;
+sfxSwap.volume  = 0.7;
+sfxMatch.volume = 0.8;
+
+// Play a short sfx from the start (supports rapid re-trigger)
+function playSfx(el) {
+  el.currentTime = 0;
+  el.play().catch(() => {});
+}
 let bgmOn = false;
 
 function setBgm(on) {
