@@ -318,6 +318,7 @@
 <audio id="sfx-excellent"   src="assets/excellent.mp3"    preload="auto"></audio>
 <audio id="sfx-amazing"     src="assets/amazing.mp3"      preload="auto"></audio>
 <audio id="sfx-unbelievable" src="assets/unbelievable.mp3" preload="auto"></audio>
+<audio id="sfx-pass"        src="assets/pass.mp3"         preload="auto"></audio>
 
 <div id="top-controls">
   <button id="btn-bgm">🔇</button>
@@ -886,7 +887,14 @@ async function eliminationLoop() {
       levelPassed = true;
       renderBoard();
       isAnimating = false;
-      await sleep(150);
+      // Play pass sfx and wait for it to finish before showing modal
+      await new Promise(resolve => {
+        sfxPass.currentTime = 0;
+        sfxPass.play().catch(() => {});
+        sfxPass.onended = resolve;
+        // Fallback: if onended doesn't fire (e.g. audio blocked), resolve after 3s
+        setTimeout(resolve, 3000);
+      });
       showLevelComplete();
       return;
     }
@@ -909,9 +917,9 @@ async function eliminationLoop() {
 
   // Play round-end rating sfx based on total score earned this cascade
   if (roundScore > 0) {
-    if      (roundScore > 40) playSfx(sfxUnbelievable);
-    else if (roundScore > 20) playSfx(sfxAmazing);
-    else if (roundScore > 6)  playSfx(sfxExcellent);
+    if      (roundScore > 80) playSfx(sfxUnbelievable);
+    else if (roundScore > 50) playSfx(sfxAmazing);
+    else if (roundScore > 20)  playSfx(sfxExcellent);
     else                      playSfx(sfxGood);
   }
 
@@ -1151,6 +1159,7 @@ const sfxGood         = document.getElementById('sfx-good');
 const sfxExcellent    = document.getElementById('sfx-excellent');
 const sfxAmazing      = document.getElementById('sfx-amazing');
 const sfxUnbelievable = document.getElementById('sfx-unbelievable');
+const sfxPass         = document.getElementById('sfx-pass');
 bgm.volume             = 0.4;
 sfxSwap.volume         = 0.7;
 sfxMatch.volume        = 0.8;
@@ -1158,6 +1167,7 @@ sfxGood.volume         = 0.9;
 sfxExcellent.volume    = 0.9;
 sfxAmazing.volume      = 0.9;
 sfxUnbelievable.volume = 0.9;
+sfxPass.volume         = 1.0;
 
 // Play a short sfx from the start (supports rapid re-trigger)
 function playSfx(el) {
