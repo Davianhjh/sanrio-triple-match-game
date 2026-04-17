@@ -381,16 +381,16 @@ const COLORS = [
 
 // walls: array of [row, col]
 const LEVELS = [
-  { colorCount:5,  target:120,  walls:[] },
-  { colorCount:5,  target:260,  walls:[[4,4],[5,5]] },
-  { colorCount:6,  target:420,  walls:[[2,2],[2,7],[7,2],[7,7]] },
-  { colorCount:6,  target:600,  walls:[[0,5],[9,4],[3,0],[6,9],[4,3],[5,6]] },
-  { colorCount:7,  target:820,  walls:[[1,2],[1,7],[8,2],[8,7],[4,0],[4,9],[5,0],[5,9]] },
-  { colorCount:7,  target:1100, walls:[[0,2],[0,7],[2,0],[2,9],[3,4],[3,5],[6,4],[6,5],[7,0],[7,9],[9,2],[9,7]] },
-  { colorCount:8,  target:1500, walls:[[1,1],[1,5],[1,8],[4,3],[4,6],[5,3],[5,6],[8,1],[8,5],[8,8],[3,0],[6,9]] },
-  { colorCount:8,  target:1950, walls:[[0,4],[0,5],[2,2],[2,7],[4,0],[4,9],[5,0],[5,9],[7,2],[7,7],[9,4],[9,5],[3,4],[6,5]] },
-  { colorCount:9,  target:2700, walls:[[0,0],[0,9],[9,0],[9,9],[2,2],[2,7],[7,2],[7,7],[4,4],[4,5],[5,4],[5,5],[1,5],[8,4]] },
-  { colorCount:10, target:3800, walls:[[0,3],[0,6],[3,0],[6,0],[3,9],[6,9],[9,3],[9,6],[2,4],[2,5],[4,2],[5,2],[4,7],[5,7],[7,4],[7,5],[4,4],[5,5]] },
+  { colorCount:7,  target:300,  walls:[] },
+  { colorCount:7,  target:420,  walls:[[4,4],[5,5]] },
+  { colorCount:7,  target:560,  walls:[[2,2],[2,7],[7,2],[7,7]] },
+  { colorCount:8,  target:720,  walls:[[0,5],[9,4],[3,0],[6,9],[4,3],[5,6]] },
+  { colorCount:8,  target:900,  walls:[[1,2],[1,7],[8,2],[8,7],[4,0],[4,9],[5,0],[5,9]] },
+  { colorCount:9,  target:1100, walls:[[0,2],[0,7],[2,0],[2,9],[3,4],[3,5],[6,4],[6,5],[7,0],[7,9],[9,2],[9,7]] },
+  { colorCount:9,  target:1320, walls:[[1,1],[1,5],[1,8],[4,3],[4,6],[5,3],[5,6],[8,1],[8,5],[8,8],[3,0],[6,9]] },
+  { colorCount:9,  target:1560, walls:[[0,4],[0,5],[2,2],[2,7],[4,0],[4,9],[5,0],[5,9],[7,2],[7,7],[9,4],[9,5],[3,4],[6,5]] },
+  { colorCount:10, target:1820, walls:[[0,0],[0,9],[9,0],[9,9],[2,2],[2,7],[7,2],[7,7],[4,4],[4,5],[5,4],[5,5],[1,5],[8,4]] },
+  { colorCount:10, target:2100, walls:[[0,3],[0,6],[3,0],[6,0],[3,9],[6,9],[9,3],[9,6],[2,4],[2,5],[4,2],[5,2],[4,7],[5,7],[7,4],[7,5],[4,4],[5,5]] },
 ];
 
 const ROWS = 10, COLS = 10;
@@ -492,30 +492,50 @@ function updateHUD() {
 //  CONNECTED COMPONENT (BFS)
 // ─────────────────────────────────────────────
 function getGroups() {
-  const visited = Array.from({length:ROWS}, ()=>Array(COLS).fill(false));
-  const groups = [];
+  // Collect all cells that belong to a horizontal or vertical run of ≥ 3
+  // same-color blocks. Walls break runs.
+  const matched = new Set(); // keys "r,c"
+
+  // Scan rows
   for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      if (visited[r][c] || board[r][c].t !== 'block') continue;
-      const color = board[r][c].color;
-      const queue = [[r,c]];
-      const grp = [];
-      visited[r][c] = true;
-      while (queue.length) {
-        const [cr,cc] = queue.shift();
-        grp.push([cr,cc]);
-        for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-          const nr=cr+dr, nc=cc+dc;
-          if (nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!visited[nr][nc]&&board[nr][nc].t==='block'&&board[nr][nc].color===color) {
-            visited[nr][nc]=true;
-            queue.push([nr,nc]);
-          }
+    let runStart = 0;
+    for (let c = 1; c <= COLS; c++) {
+      const prev = board[r][c - 1];
+      const curr = c < COLS ? board[r][c] : null;
+      // run continues only when both are blocks of the same color
+      const cont = curr && curr.t === 'block' &&
+                   prev.t === 'block' && curr.color === prev.color;
+      if (!cont) {
+        const len = c - runStart;
+        if (len >= 3 && board[r][runStart].t === 'block') {
+          for (let i = runStart; i < c; i++) matched.add(`${r},${i}`);
         }
+        runStart = c;
       }
-      if (grp.length >= 3) groups.push(grp);
     }
   }
-  return groups;
+
+  // Scan columns
+  for (let c = 0; c < COLS; c++) {
+    let runStart = 0;
+    for (let r = 1; r <= ROWS; r++) {
+      const prev = board[r - 1][c];
+      const curr = r < ROWS ? board[r][c] : null;
+      const cont = curr && curr.t === 'block' &&
+                   prev.t === 'block' && curr.color === prev.color;
+      if (!cont) {
+        const len = r - runStart;
+        if (len >= 3 && board[runStart][c].t === 'block') {
+          for (let i = runStart; i < r; i++) matched.add(`${i},${c}`);
+        }
+        runStart = r;
+      }
+    }
+  }
+
+  if (!matched.size) return [];
+  const cells = [...matched].map(k => k.split(',').map(Number));
+  return [cells];
 }
 
 // ─────────────────────────────────────────────
