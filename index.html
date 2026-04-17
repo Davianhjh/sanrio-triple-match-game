@@ -382,16 +382,16 @@
 //  CONFIG
 // ─────────────────────────────────────────────
 const COLORS = [
-  { bg:'#f48fb1', dark:'#ad1457', emoji:'🌸', img:'' }, // 0 pink
-  { bg:'#4fc3f7', dark:'#0277bd', emoji:'⭐', img:'' }, // 1 blue
-  { bg:'#a5d6a7', dark:'#2e7d32', emoji:'🍀', img:'' }, // 2 green
-  { bg:'#fff176', dark:'#f9a825', emoji:'🌟', img:'' }, // 3 yellow
-  { bg:'#ce93d8', dark:'#6a1b9a', emoji:'🎀', img:'' }, // 4 purple
-  { bg:'#ffcc80', dark:'#e65100', emoji:'🍊', img:'' }, // 5 orange
-  { bg:'#80cbc4', dark:'#00695c', emoji:'💎', img:'' }, // 6 teal
-  { bg:'#ef9a9a', dark:'#b71c1c', emoji:'❤️', img:'' }, // 7 red
-  { bg:'#9fa8da', dark:'#1a237e', emoji:'🌙', img:'' }, // 8 indigo
-  { bg:'#80deea', dark:'#006064', emoji:'🦋', img:'' }, // 9 cyan
+  { bg:'#f48fb1', dark:'#ad1457', emoji:'🌸', img:'assets/Hello-Kitty.png' }, // 0 pink
+  { bg:'#4fc3f7', dark:'#0277bd', emoji:'⭐', img:'assets/Kuromi.png.png' }, // 1 blue
+  { bg:'#a5d6a7', dark:'#2e7d32', emoji:'🍀', img:'assets/Melody.png' }, // 2 green
+  { bg:'#fff176', dark:'#f9a825', emoji:'🌟', img:'assets/Cinnamorall.png' }, // 3 yellow
+  { bg:'#ce93d8', dark:'#6a1b9a', emoji:'🎀', img:'assets/Piano.png' }, // 4 purple
+  { bg:'#ffcc80', dark:'#e65100', emoji:'🍊', img:'assets/Keroppi.png' }, // 5 orange
+  { bg:'#80cbc4', dark:'#00695c', emoji:'💎', img:'assets/Pochacco.png' }, // 6 teal
+  { bg:'#ef9a9a', dark:'#b71c1c', emoji:'❤️', img:'assets/Pompompurin.png' }, // 7 red
+  { bg:'#9fa8da', dark:'#1a237e', emoji:'🌙', img:'assets/Bad-Badtz-Maru.png' }, // 8 indigo
+  { bg:'#80deea', dark:'#006064', emoji:'🦋', img:'assets/Hangyodon.png' }, // 9 cyan
   // ↑ To use custom images: set img to a path, e.g. img:'assets/hello-kitty.png'
   // Images should be square PNGs/WebPs with transparent background.
   // Place them in an assets/ folder next to index.html.
@@ -480,7 +480,7 @@ function styleCell(div, cell) {
     if (col.img) {
       // Use custom cartoon image (transparent-bg PNG/WebP)
       div.innerHTML = `<img src="${col.img}" alt="" draggable="false"
-        style="width:72%;height:72%;object-fit:contain;pointer-events:none;display:block;">`;
+        style="width:100%;height:100%;object-fit:cover;pointer-events:none;display:block;border-radius:inherit;">`;
     } else {
       div.textContent = col.emoji;
     }
