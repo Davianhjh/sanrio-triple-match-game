@@ -55,6 +55,33 @@
     .hud-value { font-size: clamp(18px, 4vw, 22px); font-weight: 800; color: #333; }
     #hud-level { font-size: clamp(13px, 3vw, 15px); font-weight: 700; color: #d81b60; }
 
+    /* ── Fixed top-right controls ── */
+    #top-controls {
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      display: flex;
+      gap: 6px;
+      z-index: 100;
+    }
+    #btn-lang, #btn-bgm {
+      padding: 5px 12px;
+      border: none;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      background: rgba(255,255,255,.85);
+      color: #555;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+      transition: transform .12s, box-shadow .12s;
+      letter-spacing: .5px;
+    }
+    #btn-lang:active, #btn-bgm:active { transform: scale(0.95); }
+    @media (hover: hover) {
+      #btn-lang:hover, #btn-bgm:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+    }
+
     /* ── Progress bar ── */
     #progress-wrap {
       width: var(--bs);
@@ -284,12 +311,19 @@
 </head>
 <body>
 
+<audio id="bgm" src="assets/puzzle_game_bgm.mp3" loop preload="auto"></audio>
+
+<div id="top-controls">
+  <button id="btn-bgm">🔇</button>
+  <button id="btn-lang">EN</button>
+</div>
+
 <div id="game-title">🌸 消消乐 ✨</div>
 
 <!-- HUD -->
 <div id="hud">
   <div class="hud-box">
-    <span class="hud-label">步数</span>
+    <span class="hud-label" id="hud-steps-label">步数</span>
     <span class="hud-value" id="hud-steps">0</span>
   </div>
   <div class="hud-box" style="align-items:center">
@@ -297,7 +331,7 @@
     <span style="font-size:12px;color:#aaa" id="hud-target"></span>
   </div>
   <div class="hud-box" style="align-items:flex-end">
-    <span class="hud-label">得分</span>
+    <span class="hud-label" id="hud-score-label">得分</span>
     <span class="hud-value" id="hud-score">0</span>
   </div>
 </div>
@@ -322,9 +356,9 @@
 <!-- Start screen -->
 <div class="overlay" id="modal-start">
   <div class="modal-card">
-    <div class="modal-title">🌸 消消乐</div>
+    <div class="modal-title" id="modal-start-title">🌸 消消乐</div>
     <div class="modal-body">
-      <ul class="step-list">
+      <ul class="step-list" id="start-instructions">
         <li>点击两个<strong>相邻</strong>的方块来交换位置</li>
         <li>3 个或更多<strong>相同颜色</strong>相连即可消除</li>
         <li>消除后上方方块<strong>自动落下</strong>并补充新方块</li>
@@ -340,11 +374,11 @@
 <!-- Level complete -->
 <div class="overlay hidden" id="modal-complete">
   <div class="modal-card">
-    <div class="modal-title">🎉 过关啦！</div>
+    <div class="modal-title" id="modal-complete-title">🎉 过关啦！</div>
     <div class="modal-body">
-      <p>完成 <strong id="mc-level"></strong></p>
-      <p>得分：<strong id="mc-score"></strong></p>
-      <p>步数：<strong id="mc-steps"></strong></p>
+      <p><span id="mc-complete-label">完成</span> <strong id="mc-level"></strong></p>
+      <p><span id="mc-score-label">得分：</span><strong id="mc-score"></strong></p>
+      <p><span id="mc-steps-label">步数：</span><strong id="mc-steps"></strong></p>
     </div>
     <div class="modal-btns">
       <button class="btn btn-secondary" id="btn-stay">继续本关</button>
@@ -356,10 +390,10 @@
 <!-- All clear -->
 <div class="overlay hidden" id="modal-allclear">
   <div class="modal-card">
-    <div class="modal-title">🏆 全部通关！</div>
+    <div class="modal-title" id="modal-allclear-title">🏆 全部通关！</div>
     <div class="modal-body">
-      <p>恭喜你完成了全部 <strong>10 关</strong>！</p>
-      <p>你是真正的消消乐大师！ 🌟</p>
+      <p id="allclear-msg1">恭喜你完成了全部 <strong>10 关</strong>！</p>
+      <p id="allclear-msg2">你是真正的消消乐大师！ 🌟</p>
     </div>
     <div class="modal-btns">
       <button class="btn btn-primary" id="btn-replay">再来一遍</button>
@@ -370,7 +404,7 @@
 <!-- Level select -->
 <div class="overlay hidden" id="modal-levels">
   <div class="modal-card">
-    <div class="modal-title">📋 选择关卡</div>
+    <div class="modal-title" id="modal-levels-title">📋 选择关卡</div>
     <div id="lvl-grid"></div>
     <button class="btn btn-secondary" id="btn-close-levels">关闭</button>
   </div>
@@ -378,6 +412,111 @@
 
 <!-- ═══════════ SCRIPT ═══════════ -->
 <script>
+// ─────────────────────────────────────────────
+//  I18N
+// ─────────────────────────────────────────────
+const I18N = {
+  zh: {
+    pageTitle:        '消消乐 ✨',
+    gameTitle:        '🌸 消消乐 ✨',
+    labelSteps:       '步数',
+    labelScore:       '得分',
+    levelText:        n => `第 ${n} 关`,
+    targetText:       n => `目标: ${n}`,
+    btnRestart:       '🔄 重来',
+    btnHint:          '💡 提示',
+    btnLevels:        '📋 关卡',
+    btnLang:          'EN',
+    startTitle:       '🌸 消消乐',
+    startInstructions: [
+      '点击两个<strong>相邻</strong>的方块来交换位置',
+      '3 个或更多<strong>相同颜色</strong>相连即可消除',
+      '消除后上方方块<strong>自动落下</strong>并补充新方块',
+      '得分达到目标分数即可<strong>过关</strong>！',
+    ],
+    btnStart:         '开始游戏 ▶',
+    completeTitle:    '🎉 过关啦！',
+    completeLevelLabel: '完成',
+    completeScore:    '得分：',
+    completeSteps:    '步数：',
+    btnStay:          '继续本关',
+    btnNext:          '下一关 ▶',
+    allclearTitle:    '🏆 全部通关！',
+    allclearMsg1:     n => `恭喜你完成了全部 <strong>${n} 关</strong>！`,
+    allclearMsg2:     '你是真正的消消乐大师！ 🌟',
+    btnReplay:        '再来一遍',
+    levelsTitle:      '📋 选择关卡',
+    btnCloseLevels:   '关闭',
+    levelBtnText:     (n, done) => `第${n}关${done ? '✓' : ''}`,
+    noHint:           '暂时没有可消除的移动，请继续寻找！',
+  },
+  en: {
+    pageTitle:        'Triple Match ✨',
+    gameTitle:        '🌸 Triple Match ✨',
+    labelSteps:       'Steps',
+    labelScore:       'Score',
+    levelText:        n => `Level ${n}`,
+    targetText:       n => `Target: ${n}`,
+    btnRestart:       '🔄 Restart',
+    btnHint:          '💡 Hint',
+    btnLevels:        '📋 Levels',
+    btnLang:          '中文',
+    startTitle:       '🌸 Triple Match',
+    startInstructions: [
+      'Click two <strong>adjacent</strong> tiles to swap them',
+      '3 or more <strong>same-color</strong> tiles in a line are eliminated',
+      'Tiles above <strong>fall down</strong> and new ones fill in',
+      'Reach the target score to <strong>pass the level</strong>!',
+    ],
+    btnStart:         'Start Game ▶',
+    completeTitle:    '🎉 Level Complete!',
+    completeLevelLabel: 'Completed',
+    completeScore:    'Score: ',
+    completeSteps:    'Steps: ',
+    btnStay:          'Keep Playing',
+    btnNext:          'Next Level ▶',
+    allclearTitle:    '🏆 All Clear!',
+    allclearMsg1:     n => `Congrats! You cleared all <strong>${n} levels</strong>!`,
+    allclearMsg2:     "You're a true Triple Match master! 🌟",
+    btnReplay:        'Play Again',
+    levelsTitle:      '📋 Select Level',
+    btnCloseLevels:   'Close',
+    levelBtnText:     (n, done) => `Lv.${n}${done ? '✓' : ''}`,
+    noHint:           'No moves available right now. Keep looking!',
+  },
+};
+
+let lang = localStorage.getItem('sanrio-lang') || 'zh';
+
+function applyI18n() {
+  const tx = I18N[lang];
+  document.title = tx.pageTitle;
+  document.getElementById('game-title').textContent = tx.gameTitle;
+  document.getElementById('hud-steps-label').textContent = tx.labelSteps;
+  document.getElementById('hud-score-label').textContent = tx.labelScore;
+  document.getElementById('btn-restart').textContent = tx.btnRestart;
+  document.getElementById('btn-hint').textContent    = tx.btnHint;
+  document.getElementById('btn-levels').textContent  = tx.btnLevels;
+  document.getElementById('btn-lang').textContent    = tx.btnLang;
+  document.getElementById('modal-start-title').textContent = tx.startTitle;
+  const lis = document.getElementById('start-instructions').children;
+  tx.startInstructions.forEach((html, i) => { if (lis[i]) lis[i].innerHTML = html; });
+  document.getElementById('btn-start').textContent   = tx.btnStart;
+  document.getElementById('modal-complete-title').textContent = tx.completeTitle;
+  document.getElementById('mc-complete-label').textContent    = tx.completeLevelLabel;
+  document.getElementById('mc-score-label').textContent       = tx.completeScore;
+  document.getElementById('mc-steps-label').textContent       = tx.completeSteps;
+  document.getElementById('btn-stay').textContent    = tx.btnStay;
+  document.getElementById('btn-next').textContent    = tx.btnNext;
+  document.getElementById('modal-allclear-title').textContent = tx.allclearTitle;
+  document.getElementById('allclear-msg1').innerHTML = tx.allclearMsg1(LEVELS.length);
+  document.getElementById('allclear-msg2').textContent = tx.allclearMsg2;
+  document.getElementById('btn-replay').textContent  = tx.btnReplay;
+  document.getElementById('modal-levels-title').textContent = tx.levelsTitle;
+  document.getElementById('btn-close-levels').textContent   = tx.btnCloseLevels;
+  updateHUD();
+}
+
 // ─────────────────────────────────────────────
 //  CONFIG
 // ─────────────────────────────────────────────
@@ -507,10 +646,11 @@ function refreshCell(r, c) {
 
 function updateHUD() {
   const cfg = LEVELS[levelIdx];
+  const tx = I18N[lang];
   document.getElementById('hud-steps').textContent = steps;
   document.getElementById('hud-score').textContent = score;
-  document.getElementById('hud-level').textContent = `第 ${levelIdx+1} 关`;
-  document.getElementById('hud-target').textContent = `目标: ${cfg.target}`;
+  document.getElementById('hud-level').textContent = tx.levelText(levelIdx + 1);
+  document.getElementById('hud-target').textContent = tx.targetText(cfg.target);
   const pct = Math.min(100, (score / cfg.target) * 100).toFixed(1);
   document.getElementById('progress-fill').style.width = pct + '%';
 }
@@ -796,10 +936,11 @@ async function doSwap(r1,c1,r2,c2) {
 
     await sleep(340);  // slightly longer than transition duration
 
-    // Clean up inline styles
-    d1.style.transition = '';
+    // Disable transition first so clearing transform is instant (no snap-back animation)
+    d1.style.transition = 'none';
+    d2.style.transition = 'none';
+    void d1.offsetWidth; // force reflow to commit 'none' before transform changes
     d1.style.transform  = '';
-    d2.style.transition = '';
     d2.style.transform  = '';
     d1.classList.remove('swapping');
     d2.classList.remove('swapping');
@@ -888,7 +1029,7 @@ function showHint() {
   if (isAnimating) return;
   clearHint();
   const hint = findHint();
-  if (!hint) { alert('暂时没有可消除的移动，请继续寻找！'); return; }
+  if (!hint) { alert(I18N[lang].noHint); return; }
   hintCells = hint;
   const [[r1,c1],[r2,c2]] = hint;
   const d1 = cellEl(r1,c1);
@@ -946,7 +1087,8 @@ async function animateLevelStart() {
 
 function showLevelComplete() {
   completedLevels.add(levelIdx);
-  document.getElementById('mc-level').textContent = `第 ${levelIdx+1} 关`;
+  const tx = I18N[lang];
+  document.getElementById('mc-level').textContent = tx.levelText(levelIdx + 1);
   document.getElementById('mc-score').textContent = score;
   document.getElementById('mc-steps').textContent = steps;
   const nextBtn = document.getElementById('btn-next');
@@ -970,7 +1112,7 @@ function openLevelSelect() {
     if (i === levelIdx) cls = 'active';
     else if (completedLevels.has(i)) cls = 'completed';
     b.classList.add(cls);
-    b.textContent = `第${i+1}关${completedLevels.has(i)?'✓':''}`;
+    b.textContent = I18N[lang].levelBtnText(i + 1, completedLevels.has(i));
     b.addEventListener('click',()=>{
       document.getElementById('modal-levels').classList.add('hidden');
       startLevel(i);
@@ -979,6 +1121,39 @@ function openLevelSelect() {
   }
   document.getElementById('modal-levels').classList.remove('hidden');
 }
+
+// ─────────────────────────────────────────────
+//  BGM
+// ─────────────────────────────────────────────
+const bgm = document.getElementById('bgm');
+bgm.volume = 0.4;
+let bgmOn = false;
+
+function setBgm(on) {
+  bgmOn = on;
+  localStorage.setItem('sanrio-bgm', on ? '1' : '0');
+  document.getElementById('btn-bgm').textContent = on ? '🔊' : '🔇';
+  if (on) bgm.play().catch(() => {});
+  else { bgm.pause(); }
+}
+
+// Auto-start on first user interaction if preference not set
+function tryAutoPlay() {
+  if (localStorage.getItem('sanrio-bgm') !== '0') setBgm(true);
+  document.removeEventListener('pointerdown', tryAutoPlay);
+  document.removeEventListener('keydown', tryAutoPlay);
+}
+document.addEventListener('pointerdown', tryAutoPlay, { once: true });
+document.addEventListener('keydown', tryAutoPlay, { once: true });
+
+// Restore saved preference
+if (localStorage.getItem('sanrio-bgm') === '1') {
+  bgm.play().then(() => { bgmOn = true; document.getElementById('btn-bgm').textContent = '🔊'; }).catch(() => {});
+} else if (localStorage.getItem('sanrio-bgm') === '0') {
+  document.getElementById('btn-bgm').textContent = '🔇';
+}
+
+document.getElementById('btn-bgm').addEventListener('click', () => setBgm(!bgmOn));
 
 // ─────────────────────────────────────────────
 //  EVENT BINDINGS
@@ -1017,6 +1192,19 @@ document.getElementById('btn-replay').addEventListener('click', () => {
   completedLevels.clear();
   startLevel(0);
 });
+
+document.getElementById('btn-lang').addEventListener('click', () => {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('sanrio-lang', lang);
+  applyI18n();
+  // Refresh level select if open
+  if (!document.getElementById('modal-levels').classList.contains('hidden')) {
+    openLevelSelect();
+  }
+});
+
+// Apply initial language
+applyI18n();
 </script>
 </body>
 </html>
